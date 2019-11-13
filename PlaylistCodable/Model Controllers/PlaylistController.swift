@@ -7,73 +7,54 @@
 //
 
 import Foundation
+import CoreData
 
 class PlaylistController {
     
     static let shared = PlaylistController()
     
-    init() {
-        playlists = loadFromPersistentStore()
-    }
-    
     func add(playlistWithName name: String) {
-        let playlist = Playlist(name: name, songs: [])
-        playlists.append(playlist)
+        // Creating a new playlist using the name from the parameter, we are initializing it with our CoreDataStack.context, you just cannot see that happening here because we set a default value in our convenience initializer.
+        _ = Playlist(name: name)
+        // Making sure that our changes to the managed objects context are saved to the persist store.
         saveToPersistentStore()
     }
     
     func delete(playlist: Playlist) {
-        guard let index = playlists.index(of: playlist) else { return }
-        playlists.remove(at: index)
-        saveToPersistentStore()
-    }
-    
-    func add(song: Song, toPlaylist playlist: Playlist) {
-        playlist.songs.append(song)
-        saveToPersistentStore()
-    }
-    
-    func remove(song: Song, fromPlaylist playlist: Playlist) {
-        guard let index = playlist.songs.index(of: song) else { return }
-        playlist.songs.remove(at: index)
+        let moc = CoreDataStack.context
+        // Going to our Managed Object Context and removing the playlist from it.
+        moc.delete(playlist)
+        // We want to save here so that the playlist is updated with the new Managed Object Context. Without saving the playlist would still exist in the persistent store, so this is deleting the playlist from the persistent store.
         saveToPersistentStore()
     }
     
     // MARK: - Persistence
     
-    func fileURL() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        let filename = "playlists.json"
-        let fullURL = documentsDirectory.appendingPathComponent(filename)
-        return fullURL
-    }
-    
     func saveToPersistentStore() {
-        let je = JSONEncoder()
+        let moc = CoreDataStack.context
+        
         do {
-            let data =  try je.encode(playlists)
-            print(data)
-            print(String(data: data, encoding: .utf8)!)
-            try data.write(to: fileURL())
-        } catch let error {
-            print("Error saving playlist \(error)")
+            // Trying to save what is in our MOC to our persistent store.
+            try moc.save()
+        } catch {
+            // Catching the error from the do try catch block and printing what the error is.
+            print("There was a problem saving to the persistent store: \(error.localizedDescription)")
         }
-    }
-    
-    func loadFromPersistentStore() -> [Playlist] {
-        do {
-            let data = try Data(contentsOf: fileURL())
-            let jd = JSONDecoder()
-            let playlists = try jd.decode([Playlist].self, from: data)
-            return playlists
-        } catch let error {
-            print("Error loading data from disk \(error)")
-        }
-        return []
     }
     
     // MARK: - Properties
     
-    var playlists = [Playlist]()
+    // New Source of TRUTH!
+    // Making our playlist array a computed property.
+    var playlists: [Playlist] {
+        // Creating our fetch request and specifying that it will be of type playlist.
+        let request: NSFetchRequest<Playlist> = Playlist.fetchRequest()
+        do {
+            // (try? CoreDataStack.context.fetch(request)) ?? [], this is equal to a playlist and so this line is just attempting to return an array of playlists in case no playlist has been created it will return an empty array.
+            return (try? CoreDataStack.context.fetch(request)) ?? []
+        }
+//        } catch {
+//            print("Error fetching entries: \(error)")
+//        }
+    }
 }

@@ -34,10 +34,12 @@ class PlaylistTableViewController: UITableViewController {
         let playlist = PlaylistController.shared.playlists[indexPath.row]
         cell.textLabel?.text = playlist.name
         
-        if playlist.songs.count == 1 {
+        // Songs are now optional so put ? to make songs optional.
+        if playlist.songs?.count == 1 {
             cell.detailTextLabel?.text = "1 Song"
         } else {
-            cell.detailTextLabel?.text = "\(playlist.songs.count) Songs"
+            // Make the songs optional, and nil coalescing lets there be an initial value of 0 when a playlist is first created.
+            cell.detailTextLabel?.text = "\(playlist.songs?.count ?? 0) Songs"
         }
         
         return cell

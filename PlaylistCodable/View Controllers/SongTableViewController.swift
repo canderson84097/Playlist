@@ -31,14 +31,17 @@ class SongTableViewController: UITableViewController {
     // MARK: UITableViewDataSource/Delegate
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return playlist?.songs.count ?? 0
+        // Made our songs relationship to our playlist show that it is an optional.
+        return playlist?.songs?.count ?? 0
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "songCell", for: indexPath)
         
-        if let song = playlist?.songs[indexPath.row] {
-            cell.textLabel?.text = song.name
+        // Access a single song by using the .object function allowed from CoreData then pass in the indexPath.row to get the song.
+        // Cast our object as a Song.
+        if let song = playlist?.songs?.object(at: indexPath.row) as? Song {
+            cell.textLabel?.text = song.songName
             cell.detailTextLabel?.text = song.artist
         }
         
@@ -52,9 +55,12 @@ class SongTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             guard let playlist = playlist else { return }
-            let song = playlist.songs[indexPath.row]
-            PlaylistController.shared.remove(song: song, fromPlaylist: playlist)
-            tableView.deleteRows(at: [indexPath], with: .fade)
+            // Access a single song by using the .object function allowed from CoreData then pass in the indexPath.row to get the song.
+            // Cast our object as a Song.
+            if let song = playlist.songs?.object(at: indexPath.row) as? Song {
+                SongController.delete(song: song)
+                tableView.deleteRows(at: [indexPath], with: .fade)
+            }
         }
     }
     
